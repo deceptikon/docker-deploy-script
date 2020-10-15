@@ -42,7 +42,6 @@ rundock() {
     export $(cat env_front | xargs)
     cmd="docker run --rm -d \
 	--env-file ./env_front
-	--mount type=bind,source="$(pwd)"/php.sock,target=/tmp/php-fpm.sock \
 	--mount type=bind,source=/var/www,target=/app \
 	--mount type=bind,source=/var/log/fpm-error.log,target=/var/log/error.log \
 	--mount type=bind,source=/var/log/fpm-access.log,target=/var/log/access.log \
