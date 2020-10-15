@@ -39,9 +39,11 @@ rundock() {
   NAME="${REPOS[$1]}"
   printf "Starting $1 container...\n"
   if [ $1 = 'front' ]; then
-    cmd="docker run -d --rm \
-      -p 9000:9000 \
-      --name $NAME $NAME"
+    cmd="\
+docker run -d --rm \
+  --mount type=bind,source="$(pwd)"/php.sock,target=/tmp/php-fpm.sock \
+  -p 9000:9000 \
+  --name $NAME $NAME"
   elif [ $1 = 'back' ]; then
     cmd="docker run -d --rm --name $NAME $NAME"
   else
@@ -100,6 +102,13 @@ err() {
 # Main execution starts from here
 ######
 
+sock="$(pwd)/php.sock"
+
+if [ ! -f "$sock" ]; then
+   touch "$sock"
+   chmod 777 "$sock"
+fi
+
 REGISTRY="35.185.239.138:5000"
 declare -A REPOS
 REPOS['front']='front-suroo-kg'
@@ -107,8 +116,8 @@ REPOS['back']='back-suroo-kg'
 
 # update local images before check
 title 'Checking image updates'
-# docker pull $REGISTRY/${REPOS['front']}
-# docker pull $REGISTRY/${REPOS['back']}
+docker pull $REGISTRY/${REPOS['front']}
+docker pull $REGISTRY/${REPOS['back']}
 
 
 title 'Checking if containers are up and starting if not'
