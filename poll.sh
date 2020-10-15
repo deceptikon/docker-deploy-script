@@ -39,13 +39,24 @@ rundock() {
   NAME="${REPOS[$1]}"
   printf "Starting $1 container...\n"
   if [ $1 = 'front' ]; then
-    cmd="\
-docker run -d --rm \
-  --mount type=bind,source="$(pwd)"/php.sock,target=/tmp/php-fpm.sock \
-  -p 9000:9000 \
-  --name $NAME $NAME"
+    export $(cat env_front | xargs)
+    cmd="docker run --rm -d \
+	--env-file ./env_front
+	--mount type=bind,source="$(pwd)"/php.sock,target=/tmp/php-fpm.sock \
+	--mount type=bind,source=/var/www,target=/app \
+	--mount type=bind,source=/var/log/fpm-error.log,target=/var/log/error.log \
+	--mount type=bind,source=/var/log/fpm-access.log,target=/var/log/access.log \
+	--mount type=bind,source="$(pwd)"/www.conf,target=/usr/local/etc/php-fpm.d/www.conf \
+	-p 9000:9000 \
+	--name $NAME $NAME"
   elif [ $1 = 'back' ]; then
-    cmd="docker run -d --rm --name $NAME $NAME"
+    export $(cat env_back | xargs)
+    cmd="docker run --rm \
+	--env-file ./env_back
+	--mount type=bind,source=/var/log/backend-app.log,target=/var/log/backend-app.log \
+	-p 8080:8080 \
+	-p 8443:8443 \
+  --name $NAME $NAME"
   else
     err 'Unexpected type'
   fi
@@ -91,7 +102,7 @@ title() {
 }
 
 err() {
-  printf "$RED\nERROR: $1\n"
+  printf "$RED\nERROR: $1 $NC\n"
 }
 
 
