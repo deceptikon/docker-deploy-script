@@ -99,6 +99,10 @@ update_exists() {
     "http://$REGISTRY/v2/$REPO/manifests/latest" | jq -r '.config.digest')
   RUNNING=$(docker images -q --no-trunc $REPO:latest)
 
+  if [ -z "$LATEST" ]; then
+    return 1
+  fi
+
   if [ "$RUNNING" == "$LATEST" ];then
     return 1
   else
