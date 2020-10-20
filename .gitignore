@@ -1,4 +1,4 @@
-deploy/
+docker/
 deploy.log
 env_back
 env_front

@@ -20,9 +20,9 @@ NC='\033[0m' # No Color
 rebuild() {
   repoType=$1
   REPO="${REPOS[$1]}"
-  mkdir deploy -p
-  dockerfile $repoType > deploy/Dockerfile
-  if docker build -t $REPO - < deploy/Dockerfile ; then
+  mkdir docker -p
+  dockerfile $repoType > docker/Dockerfile
+  if docker build -t $REPO - < docker/Dockerfile ; then
     stopdock $repoType
     rundock $repoType
   fi
