@@ -155,8 +155,8 @@ REPOS['admin']='admin-suroo-kg'
 dt=$(date '+%d/%m/%Y %H:%M:%S');
 printf "\n===== $dt ====="
 title "Checking image updates"
-# docker pull $REGISTRY/${REPOS['front']}
-# docker pull $REGISTRY/${REPOS['back']}
+docker pull $REGISTRY/${REPOS['front']}
+docker pull $REGISTRY/${REPOS['back']}
 docker pull $REGISTRY/${REPOS['admin']}
 
 
