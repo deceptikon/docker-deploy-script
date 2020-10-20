@@ -7,6 +7,8 @@ if ! [ -n "$BASH_VERSION" ];then
     exit;
 fi
 
+cd "$(dirname "$0")";
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
@@ -39,23 +41,29 @@ rundock() {
   NAME="${REPOS[$1]}"
   printf "Starting $1 container...\n"
   if [ $1 = 'front' ]; then
-    export $(cat env_front | xargs)
-    cmd="docker run --rm -d \
-	--env-file ./env_front
+    export $(cat $(pwd)/env_front | xargs)
+    cmd="\
+	docker run --rm -d \
+	--env-file $(pwd)/env_front \
 	--mount type=bind,source=/var/www,target=/app \
 	--mount type=bind,source=/var/log/fpm-error.log,target=/var/log/error.log \
 	--mount type=bind,source=/var/log/fpm-access.log,target=/var/log/access.log \
 	--mount type=bind,source="$(pwd)"/www.conf,target=/usr/local/etc/php-fpm.d/www.conf \
+	--add-host=postgres:172.17.0.1 \
 	-p 9000:9000 \
 	--name $NAME $NAME"
+    notify 'Starting FRONT container'
   elif [ $1 = 'back' ]; then
-    export $(cat env_back | xargs)
-    cmd="docker run --rm \
-	--env-file ./env_back
+  export $(cat $(pwd)/env_back | xargs)
+    cmd="\
+	docker run --rm -d \
+	--env-file $(pwd)/env_back \
 	--mount type=bind,source=/var/log/backend-app.log,target=/var/log/backend-app.log \
+	--add-host=postgres:172.17.0.1 \
 	-p 8080:8080 \
 	-p 8443:8443 \
-  --name $NAME $NAME"
+	--name $NAME $NAME"
+    notify 'Starting FRONT container'
   else
     err 'Unexpected type'
   fi
@@ -74,6 +82,10 @@ dockerfile() {
   REPO="${REPOS[$1]}"
   echo "FROM $REGISTRY/$REPO"
   # echo "EXPOSE 9000"
+}
+
+notify() {
+  /root/telegram.sh/telegram "$1" 2> /dev/null
 }
 
 update_exists() {
@@ -157,8 +169,13 @@ fi
 title 'Checking if containers are up again'
 if is_down 'front'; then
   err 'Front container is down'
+  notify 'ACHTUNG! FRONT container is down'
+else
+  printf "Front:$GREEN ✓ UP $NC\n";
 fi
 if is_down 'back'; then
   err 'Back container is down'
+  notify 'ACHTUNG! BACK container is down'
+else
+  printf "Back: $GREEN ✓ UP $NC\n";
 fi
-
