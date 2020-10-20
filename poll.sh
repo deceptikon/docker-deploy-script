@@ -42,19 +42,18 @@ rundock() {
   printf "Starting $1 container...\n"
   if [ $1 = 'front' ]; then
     export $(cat $(pwd)/env_front | xargs)
-    cmd="\
-	docker run --rm -d \
-	--env-file $(pwd)/env_front \
-	--mount type=bind,source=/var/www,target=/app \
-	--mount type=bind,source=/var/log/fpm-error.log,target=/var/log/error.log \
-	--mount type=bind,source=/var/log/fpm-access.log,target=/var/log/access.log \
-	--mount type=bind,source="$(pwd)"/www.conf,target=/usr/local/etc/php-fpm.d/www.conf \
-	--add-host=postgres:172.17.0.1 \
-	-p 9000:9000 \
-	--name $NAME $NAME"
+    cmd="docker run --rm -d \
+      --env-file $(pwd)/env_front \
+      --mount type=bind,source=/var/www,target=/app \
+      --mount type=bind,source=/var/log/fpm-error.log,target=/var/log/error.log \
+      --mount type=bind,source=/var/log/fpm-access.log,target=/var/log/access.log \
+      --mount type=bind,source="$(pwd)"/www.conf,target=/usr/local/etc/php-fpm.d/www.conf \
+      --add-host=postgres:172.17.0.1 \
+      -p 9000:9000 \
+      --name $NAME $NAME"
     notify 'Starting FRONT container'
   elif [ $1 = 'back' ]; then
-  export $(cat $(pwd)/env_back | xargs)
+    export $(cat $(pwd)/env_back | xargs)
     cmd="\
 	docker run --rm -d \
 	--env-file $(pwd)/env_back \
@@ -64,6 +63,18 @@ rundock() {
 	-p 8443:8443 \
 	--name $NAME $NAME"
     notify 'Starting BACK container'
+  elif [ $1 = 'admin' ]; then
+    export $(cat $(pwd)/env_front | xargs)
+    cmd="docker run --rm -d \
+      --env-file $(pwd)/env_front \
+      --mount type=bind,source=/var/www/admin,target=/app \
+      --mount type=bind,source=/var/log/fpm-admin-error.log,target=/var/log/error.log \
+      --mount type=bind,source=/var/log/fpm-admin-access.log,target=/var/log/access.log \
+      --mount type=bind,source="$(pwd)"/www.conf,target=/usr/local/etc/php-fpm.d/www.conf \
+      --add-host=postgres:172.17.0.1 \
+      -p 9900:9000 \
+      --name $NAME $NAME"
+    notify 'Starting ADMIN container'
   else
     err 'Unexpected type'
   fi
@@ -72,16 +83,17 @@ rundock() {
   ${cmd}
   printf "\n"
 }
+
 stopdock() {
   NAME="${REPOS[$1]}"
   printf "Stopping old containers...\n"
   docker stop $NAME
   docker rm $NAME
 }
+
 dockerfile() {
   REPO="${REPOS[$1]}"
   echo "FROM $REGISTRY/$REPO"
-  # echo "EXPOSE 9000"
 }
 
 notify() {
@@ -132,51 +144,72 @@ REGISTRY="35.185.239.138:5000"
 declare -A REPOS
 REPOS['front']='front-suroo-kg'
 REPOS['back']='back-suroo-kg'
+REPOS['admin']='admin-suroo-kg'
 
 # update local images before check
 dt=$(date '+%d/%m/%Y %H:%M:%S');
 echo "===== $dt ====="
 title "Checking image updates"
-docker pull $REGISTRY/${REPOS['front']}
-docker pull $REGISTRY/${REPOS['back']}
+# docker pull $REGISTRY/${REPOS['front']}
+# docker pull $REGISTRY/${REPOS['back']}
+docker pull $REGISTRY/${REPOS['admin']}
 
 
 title 'Checking if containers are up and starting if not'
-if is_down 'front'; then
-  rundock 'front'
-fi
-if is_down 'back'; then
-  rundock 'back'
-fi
-
-title 'Checking container updates'
-if update_exists 'front' ; then
-  notify 'FRONT update in progress...'
-  title 'Rebuilding front'
-  rebuild 'front'
-else
-  echo 'Front is latest version'
+# if is_down 'front'; then
+#   rundock 'front'
+# fi
+# if is_down 'back'; then
+#   rundock 'back'
+# fi
+if is_down 'admin'; then
+  rundock 'admin'
 fi
 
-if update_exists "back" ; then
-  notify 'BACK update in progress...'
-  title 'Rebuilding back'
-  rebuild 'back'
+# title 'Checking container updates'
+# if update_exists 'front' ; then
+#   notify 'FRONT update in progress...'
+#   title 'Rebuilding front'
+#   rebuild 'front'
+# else
+#   echo 'Front is latest version'
+# fi
+# 
+# if update_exists "back" ; then
+#   notify 'BACK update in progress...'
+#   title 'Rebuilding back'
+#   rebuild 'back'
+# else
+#   echo 'Back is latest version'
+# fi
+
+if update_exists "admin" ; then
+  notify 'ADMIN update in progress...'
+  title 'Rebuilding admin'
+  rebuild 'admin'
 else
-  echo 'Back is latest version'
+  echo 'Admin is latest version'
 fi
 
 
 title 'Checking if containers are up again'
-if is_down 'front'; then
-  err 'Front container is down'
-  notify 'ACHTUNG! FRONT container is down'
+# if is_down 'front'; then
+#   err 'Front container is down'
+#   notify 'ACHTUNG! FRONT container is down'
+# else
+#   printf "Front:$GREEN ✓ UP $NC\n";
+# fi
+# 
+# if is_down 'back'; then
+#   err 'Back container is down'
+#   notify 'ACHTUNG! BACK container is down'
+# else
+#   printf "Back: $GREEN ✓ UP $NC\n";
+# fi
+
+if is_down 'admin'; then
+  err 'Admin container is down'
+  notify 'ACHTUNG! ADMIN container is down'
 else
-  printf "Front:$GREEN ✓ UP $NC\n";
-fi
-if is_down 'back'; then
-  err 'Back container is down'
-  notify 'ACHTUNG! BACK container is down'
-else
-  printf "Back: $GREEN ✓ UP $NC\n";
+  printf "Admin: $GREEN ✓ UP $NC\n";
 fi
