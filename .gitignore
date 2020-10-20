@@ -1,3 +1,4 @@
 deploy/
-php.sock
-OLDpoller.sh
+deploy.log
+env_back
+env_front
