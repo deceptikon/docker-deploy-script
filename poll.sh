@@ -130,7 +130,9 @@ REPOS['front']='front-suroo-kg'
 REPOS['back']='back-suroo-kg'
 
 # update local images before check
-title 'Checking image updates'
+dt=$(date '+%d/%m/%Y %H:%M:%S');
+echo "===== $dt ====="
+title "Checking image updates"
 docker pull $REGISTRY/${REPOS['front']}
 docker pull $REGISTRY/${REPOS['back']}
 
