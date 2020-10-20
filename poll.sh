@@ -63,7 +63,7 @@ rundock() {
 	-p 8080:8080 \
 	-p 8443:8443 \
 	--name $NAME $NAME"
-    notify 'Starting FRONT container'
+    notify 'Starting BACK container'
   else
     err 'Unexpected type'
   fi
@@ -152,6 +152,7 @@ fi
 
 title 'Checking container updates'
 if update_exists 'front' ; then
+  notify 'FRONT update in progress...'
   title 'Rebuilding front'
   rebuild 'front'
 else
@@ -159,6 +160,7 @@ else
 fi
 
 if update_exists "back" ; then
+  notify 'BACK update in progress...'
   title 'Rebuilding back'
   rebuild 'back'
 else
