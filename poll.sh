@@ -124,13 +124,6 @@ err() {
 # Main execution starts from here
 ######
 
-sock="$(pwd)/php.sock"
-
-if [ ! -f "$sock" ]; then
-   touch "$sock"
-   chmod 777 "$sock"
-fi
-
 REGISTRY="35.185.239.138:5000"
 declare -A REPOS
 REPOS['front']='front-suroo-kg'
