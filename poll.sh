@@ -50,13 +50,12 @@ rundock() {
     export $(cat $(pwd)/env_front | xargs)
     cmd="docker run --rm -d \
       --env-file $(pwd)/env_front \
-      --mount type=bind,source=/var/www,target=/app \
       --mount type=bind,source=/var/log/fpm-error.log,target=/var/log/error.log \
       --mount type=bind,source=/var/log/fpm-access.log,target=/var/log/access.log \
       --mount type=bind,source="$(pwd)"/www.conf,target=/usr/local/etc/php-fpm.d/www.conf \
-      --add-host=postgres:172.17.0.1 \
       -p 9000:9000 \
       --name $NAME $NAME"
+    postCmd="docker cp $NAME:/var/www /var/www/front"
   elif [ $1 = 'back' ]; then
     notify 'Starting BACK container'
     export $(cat $(pwd)/env_back | xargs)
@@ -67,24 +66,27 @@ rundock() {
       -p 8080:8080 \
       -p 8443:8443 \
       --name $NAME $NAME"
+    postCmd="echo '' > /dev/null"
   elif [ $1 = 'admin' ]; then
     notify 'Starting ADMIN container'
     export $(cat $(pwd)/env_front | xargs)
     cmd="docker run --rm -d \
       --env-file $(pwd)/env_front \
-      --mount type=bind,source=/var/www/admin,target=/app \
       --mount type=bind,source=/var/log/fpm-admin-error.log,target=/var/log/error.log \
       --mount type=bind,source=/var/log/fpm-admin-access.log,target=/var/log/access.log \
       --mount type=bind,source="$(pwd)"/www.conf,target=/usr/local/etc/php-fpm.d/www.conf \
-      --add-host=postgres:172.17.0.1 \
       -p 9900:9000 \
       --name $NAME $NAME"
+    postCmd="docker cp $NAME:/var/www /var/www/admin"
   else
     err 'Unexpected type'
   fi
 
   printf "$GREEN $cmd $NC\n"
   ${cmd}
+  printf "\n"
+  printf "$GREEN $postCmd $NC\n"
+  ${postCmd}
   printf "\n"
 }
 
