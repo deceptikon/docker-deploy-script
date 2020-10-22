@@ -19,16 +19,11 @@ NC='\033[0m' # No Color
 # uncomment to debug
 # set -x
 
-# builds desired image using tag name and restarts containers
+# restarts containers
 rebuild() {
   repoType=$1
-  REPO="${REPOS[$1]}"
-  mkdir docker -p
-  dockerfile $repoType > docker/Dockerfile
-  if docker build -t $REPO - < docker/Dockerfile ; then
-    stopdock $repoType
-    rundock $repoType
-  fi
+  stopdock $repoType
+  rundock $repoType
 }
 
 # checks if container is running, returns true if not
@@ -54,8 +49,10 @@ rundock() {
       --mount type=bind,source=/var/log/fpm-access.log,target=/var/log/access.log \
       --mount type=bind,source="$(pwd)"/www.conf,target=/usr/local/etc/php-fpm.d/www.conf \
       -p 9000:9000 \
-      --name $NAME $NAME"
+      --name $NAME $REGISTRY/$NAME"
     postCmd="docker cp $NAME:/var/www /var/www/front"
+    runcmd "$cmd"
+    runcmd "$postCmd"
   elif [ $1 = 'back' ]; then
     notify 'Starting BACK container'
     export $(cat $(pwd)/env_back | xargs)
@@ -65,8 +62,8 @@ rundock() {
       --add-host=postgres:172.17.0.1 \
       -p 8080:8080 \
       -p 8443:8443 \
-      --name $NAME $NAME"
-    postCmd="echo '' > /dev/null"
+      --name $NAME $REGISTRY/$NAME"
+    runcmd "$cmd"
   elif [ $1 = 'admin' ]; then
     notify 'Starting ADMIN container'
     export $(cat $(pwd)/env_front | xargs)
@@ -75,18 +72,24 @@ rundock() {
       --mount type=bind,source=/var/log/fpm-admin-error.log,target=/var/log/error.log \
       --mount type=bind,source=/var/log/fpm-admin-access.log,target=/var/log/access.log \
       --mount type=bind,source="$(pwd)"/www.conf,target=/usr/local/etc/php-fpm.d/www.conf \
+      --mount type=bind,source="$(pwd)"/php.ini,target=/usr/local/etc/php/php.ini \
       -p 9900:9000 \
-      --name $NAME $NAME"
+      --name $NAME $REGISTRY/$NAME"
     postCmd="docker cp $NAME:/var/www /var/www/admin"
+    cacheClear="docker exec -ti $NAME php artisan config:cache"
+    runcmd "$cmd"
+    runcmd "$postCmd"
+    sleep 5
+    runcmd "$cacheClear"
   else
     err 'Unexpected type'
   fi
+}
 
-  printf "$GREEN $cmd $NC\n"
+runcmd() {
+  cmd=$1
+  printf "RUN: $GREEN $cmd $NC\n"
   ${cmd}
-  printf "\n"
-  printf "$GREEN $postCmd $NC\n"
-  ${postCmd}
   printf "\n"
 }
 
@@ -95,11 +98,6 @@ stopdock() {
   printf "Stopping old containers...\n"
   docker stop $NAME
   docker rm $NAME
-}
-
-dockerfile() {
-  REPO="${REPOS[$1]}"
-  echo "FROM $REGISTRY/$REPO"
 }
 
 notify() {
@@ -116,7 +114,7 @@ update_exists() {
 
   LATEST=$(curl --silent -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
     "http://$REGISTRY/v2/$REPO/manifests/latest" | jq -r '.config.digest')
-  RUNNING=$(docker images -q --no-trunc $REPO:latest)
+  RUNNING=$(docker images -q --no-trunc $REGISTRY/$REPO:latest)
 
   if [ -z "$LATEST" ]; then
     return 1
