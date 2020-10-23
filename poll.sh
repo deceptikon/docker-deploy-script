@@ -144,8 +144,12 @@ err() {
 ######
 # Main execution starts from here
 ######
+if [ -z "$REGISTRY" ]; then
+  err "You need to set REGISTRY env var to point to docker hub"
+  echo "Execution stopped!"
+  exit
+fi
 
-REGISTRY="35.185.239.138:5000"
 declare -A REPOS
 REPOS['front']='front-suroo-kg'
 REPOS['back']='back-suroo-kg'
