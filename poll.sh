@@ -51,8 +51,11 @@ rundock() {
       -p 9000:9000 \
       --name $NAME $REGISTRY/$NAME"
     postCmd="docker cp $NAME:/var/www /var/www/front"
+    cacheClear="docker exec -ti $NAME php artisan optimize"
     runcmd "$cmd"
     runcmd "$postCmd"
+    sleep 5
+    runcmd "$cacheClear"
   elif [ $1 = 'back' ]; then
     notify 'Starting BACK container'
     export $(cat $(pwd)/env_back | xargs)
@@ -76,7 +79,7 @@ rundock() {
       -p 9900:9000 \
       --name $NAME $REGISTRY/$NAME"
     postCmd="docker cp $NAME:/var/www /var/www/admin"
-    cacheClear="docker exec -ti $NAME php artisan config:cache"
+    cacheClear="docker exec -ti $NAME php artisan optimize"
     runcmd "$cmd"
     runcmd "$postCmd"
     sleep 5
