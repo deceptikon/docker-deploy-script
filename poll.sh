@@ -158,14 +158,8 @@ REPOS['front']='front-suroo-kg'
 REPOS['back']='back-suroo-kg'
 REPOS['admin']='admin-suroo-kg'
 
-# update local images before check
 dt=$(date '+%d/%m/%Y %H:%M:%S');
 printf "\n===== $dt ====="
-title "Checking image updates"
-docker pull $REGISTRY/${REPOS['front']}
-docker pull $REGISTRY/${REPOS['back']}
-docker pull $REGISTRY/${REPOS['admin']}
-
 
 title 'Checking if containers are up and starting if not'
 if is_down 'front'; then
@@ -182,6 +176,7 @@ fi
 title 'Checking container updates'
 if update_exists 'front' ; then
   notify 'FRONT update in progress...'
+  docker pull $REGISTRY/${REPOS['front']}
   title 'Rebuilding front'
   rebuild 'front'
 else
@@ -190,6 +185,7 @@ fi
 
 if update_exists "back" ; then
   notify 'BACK update in progress...'
+  docker pull $REGISTRY/${REPOS['back']}
   title 'Rebuilding back'
   rebuild 'back'
 else
@@ -198,6 +194,7 @@ fi
 
 if update_exists "admin" ; then
   notify 'ADMIN update in progress...'
+  docker pull $REGISTRY/${REPOS['admin']}
   title 'Rebuilding admin'
   rebuild 'admin'
 else
