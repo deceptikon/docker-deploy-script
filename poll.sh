@@ -51,7 +51,7 @@ rundock() {
       -p 9000:9000 \
       --name $NAME $REGISTRY/$NAME"
     postCmd="docker cp $NAME:/var/www /var/www/front"
-    cacheClear="docker exec -ti $NAME php artisan optimize"
+    cacheClear="docker exec $NAME php artisan optimize"
     runcmd "$cmd"
     runcmd "$postCmd"
     sleep 5
@@ -79,7 +79,7 @@ rundock() {
       -p 9900:9000 \
       --name $NAME $REGISTRY/$NAME"
     postCmd="docker cp $NAME:/var/www /var/www/admin"
-    cacheClear="docker exec -ti $NAME php artisan optimize"
+    cacheClear="docker exec $NAME php artisan optimize"
     runcmd "$cmd"
     runcmd "$postCmd"
     sleep 5
