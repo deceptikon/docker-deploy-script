@@ -223,3 +223,6 @@ if is_down 'admin'; then
 else
   printf "Admin: $GREEN ✓ UP $NC\n";
 fi
+
+title 'Cleanup: Purging old images'
+docker image prune -a -f
